@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Brainware University</title>
+<!--===============================================================================================-->  
+  <link rel="icon" type="image/png" href="images/icons/favicon.ico"/>
+<!--===============================================================================================-->
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+<!--===============================================================================================-->
+  <link rel="stylesheet" type="text/css" href="fonts/font-awesome-4.7.0/css/font-awesome.min.css">
+<!--===============================================================================================-->
+  <link rel="stylesheet" type="text/css" href="css/util.css">
+<!--===============================================================================================-->
+  <link rel="stylesheet" type="text/css" href="css/are_you_member.css">
+<!--===============================================================================================-->
+</head>
+<style>
+
+</style>
+<body>
+  <div class="col-md-12 col-xs-12">
+        <h3><center>Add Computer</center></h3>
+        <div class="col-md-2 col-xs-12"></div>
+        <div class="col-md-8 col-xs-12">
+          <p id="error_message" style="text-align: center; color:red; font-weight: bold;"></p>
+          <form class="" id="login_form" name="login_form">
+              <input class="input100" type="hidden" name="client_no" id="client_no" >
+              <input class="input100" type="hidden" name="token" id="token" >
+              <input class="input100" type="hidden" name="sys_key" id="sys_key" >
+              <input class="input100" type="hidden" name="parent_id" id="parent_id" >
+              <span class="" id="err_member_email_id" style="color:#B22222; font-weight: bold;"></span>
+              <div class="fontusercontact">
+                <input class="input100" type="text" name="member_email_id" id="member_email_id" placeholder="Enter Building / Email Id" >
+                <i class="fa fa-info-circle" title="Company administrator email id."></i>
+              </div>
+                <button type="button" class="btn member login100-form-btn btn-css" id="btn_validate" onclick="validate()">VALIDATE</button>
+               <div class="" id="allocate_user" style="display: none;">
+                  <select class="input100" id="alloc_users" >
+                    <option value="" selected disabled>Allocated Room</option>
+                    <!-- <option value="new">Create New User</option> -->
+                  </select>
+               </div>
+               <div class="" id="allocate_department" style="display: none;" onchange="checkNewUser(this.value);" >
+                <select class="input100" id="alloc_department">
+                  <option value="" selected disabled>Allocated Department</option>
+                  <!-- <option value="new">Create New User</option> -->
+                </select>
+             </div>
+               <div id="new_user_form" style="display: none;">
+                    <!-- <p style="text-align: center; font-weight: bold;">Enter User Detail</p> -->
+                    <div>
+                      <input type="text" class="input100"  name="user_first_name" id="user_first_name" placeholder="Computer Name*" oninput="this.setCustomValidity('')" >
+                      <span class="focus-input100" id="err_user_fname" ></span>
+                   </div>
+                    </br>
+
+                   <div class="">
+                      <input class="input100" type="text" name="monitor_no" id="monitor_no" placeholder="Monitor No."> 
+                      <span class="focus-input100" id="err_user_lname" ></span>
+                   </div>
+                  
+                    <div class="fontusercontact">
+                       
+                        <input class="input100" type="text" name="ups_no" id="ups_no" placeholder="UPS No." >
+                        <span class="focus-input100" id="err_user_contact" ></span>
+                      
+                    </div>
+
+                     
+               </div>
+               <div id="after_validate" style="display: none;">
+                 <div class="form-group" id="device_name">
+                      <select class="form-control" id="device_type" >
+                        <option value="" selected disabled>Device Type</option>
+                      </select>
+                 </div>
+                 <div id="all-loader"></div>
+                 <button class="btn new login100-form-btn btn-css" type="submit">Submit</button>
+               </div>
+              <button type="button" class="btn new login100-form-btn btn-css" onclick="backToMain()" >BACK</button>
+          </form>
+        </div>
+        <div class="col-md-4 col-xs-12"></div>        
+  </div>
+</body>
+ <!--===============================================================================================-->
+  <script src="vendor/jquery/jquery-3.2.1.min.js"></script>
+<!--===============================================================================================-->
+  <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+<!--===============================================================================================-->
+  <script src="js/main.js"></script>
+<!--===============================================================================================-->
+  <script>window.$ = window.jQuery = require('jquery');</script>
+<!--===============================================================================================-->
+  <script>
+        const electron = require('electron');
+        const {ipcRenderer} = electron;
+        const {BrowserWindow} = require('electron').remote;
+        const {remote} = require('electron');
+        const root_url = remote.getGlobal('root_url');
+
+        const form = document.querySelector('form');
+        form.addEventListener('submit',submitForm);
+
+        function submitForm(e){
+          e.preventDefault();
+            
+            var condition = navigator.onLine ? "ONLINE" : "OFFLINE";             
+            var error_message = document.getElementById("error_message"); 
+            if(condition == 'OFFLINE'){
+              error_message.innerHTML = 'No internet connection';
+              return false;
+            }else{
+              error_message.innerHTML = '';
+            }
+
+            var sys_key = document.querySelector('#sys_key').value;
+            var room_id = document.querySelector('#alloc_users').value; 
+            var department_id = document.querySelector('#alloc_department').value; 
+            var dev_type = document.querySelector('#device_type').value;
+            var client_no = document.querySelector('#client_no').value;
+            var token = document.querySelector('#token').value;
+          //  var title_type = document.querySelector('#title_type').value;
+            var user_first_name = document.querySelector('#user_first_name').value;
+            var monitor_no = document.querySelector('#monitor_no').value;
+           // var user_email = document.querySelector('#user_email').value;
+            var ups_no = document.querySelector('#ups_no').value;
+
+           // console.log(room_id);
+            document.getElementById('all-loader').style.display='block';
+            if(sys_key != '' && room_id != '' && dev_type != '' ){ 
+              const input_values = {
+                system_key: sys_key, 
+                roomId : room_id,
+                departmentId : department_id,
+                clientno: client_no,
+                token: token,
+                title: '',
+                usr_first_name: user_first_name,
+                usr_last_name: '',
+                usr_email: '',
+                usr_contact: '',
+                ups_no: ups_no,
+                monitor_no: monitor_no,
+                device_type : dev_type
+                
+              };
+              ipcRenderer.send('login_data',input_values);
+              document.login_form.reset();
+            }
+          
+        }
+
+        function getSystemKey(){ 
+          const input_values = {};
+          ipcRenderer.send('getSystemKey',input_values);
+        }
+
+        function loadAllocUser(user_id){
+          console.log("Member id: "+user_id);
+          const input_values = {
+            user_id: user_id
+          };
+          ipcRenderer.send('loadAllocUser',input_values);
+        }
+
+        function loadAllocDepartment(user_id){
+          console.log("Member id: "+user_id);
+        const input_values = {
+          user_id: user_id
+        };
+        ipcRenderer.send('loadAllocDepartment',input_values);
+        }
+
+        function loadDevType(isCloudUser){ 
+          var select = document.getElementById("device_type");
+          document.getElementById("device_type").options.length = 0;
+          var options = new Array();
+          if(isCloudUser == 'yes'){
+       // assign device type id s it is needed in asset table
+            options[0] = {name:"Laptop",value: 4};
+            options[1] = {name:"Desktop",value: 6};
+            options[2] = {name:"Cloud Server",value: 16};
+
+          }else{
+           options[0] = {name:"Laptop",value: 4};
+           options[1] = {name:"Desktop",value: 6};
+          }
+        
+          for (var i = 0; i < options.length; i++) {
+            var el = document.createElement("option");
+            el.textContent = options[i].name;
+            el.value = options[i].value;
+            select.appendChild(el);
+          }
+        }
+
+        function validate(){ 
+
+          var condition = navigator.onLine ? "ONLINE" : "OFFLINE";             
+          var error_message = document.getElementById("error_message"); 
+          if(condition == 'OFFLINE'){
+            error_message.innerHTML = 'No internet connection';
+            return false;
+          }else{
+            error_message.innerHTML = '';
+          }
+
+          var email = document.getElementById('member_email_id').value; 
+          document.getElementById('err_member_email_id').innerText = '';
+          if(email != ''){
+            
+            var vali_btn_suc =  document.getElementById('btn_validate');
+            vali_btn_suc.setAttribute('style', 'display:none !important');
+            const input_values = {
+               email: email
+            };
+            ipcRenderer.send('check_member_email',input_values);
+            ipcRenderer.send('executionPolicyScript');
+            ipcRenderer.send('hideApp');
+            ipcRenderer.send('hideDeskstopEpromptoApp');
+
+          }else{
+            document.getElementById('err_member_email_id').innerText = 'Member Email Id Required';
+          }
+        }
+       
+        function IsChecked(){
+          var checkBox = document.getElementById("is_parent_email");
+          if (checkBox.checked == true){
+            document.getElementById("user_email").value = document.getElementById("member_email_id").value;
+          } else {
+            document.getElementById("user_email").value = '';
+          }
+        }
+
+        function checkDuplication(email){ console.log(email);
+           var parent_user_id = document.getElementById("parent_id").value;
+           const input_values = {
+             email: email,
+             parent_id: parent_user_id
+           };
+           ipcRenderer.send('check_user_email',input_values);
+        }
+
+        function backToMain(){
+           const input_values = {};
+           ipcRenderer.send('cancel_login',input_values);
+        }
+
+        function checkNewUser(val){
+            document.getElementById("user_first_name").required = true;
+            document.getElementById("monitor_no").required = false;
+            // document.getElementById("user_email").required = true;
+            document.getElementById("ups_no").required = false;
+            document.getElementById('new_user_form').style.display="block";
+        }
+
+        ipcRenderer.on('checked_user_email', (event, data) => { 
+          if(data == 'invalid'){
+            document.getElementById("err_user_email").innerText = 'Email Id already exist';
+            document.getElementById("user_email").value = "";
+          }else{
+            document.getElementById("err_user_email").innerText = '';
+          }
+        });
+
+        ipcRenderer.on('setSysKey', (event, data) => { 
+          document.getElementById('sys_key').value = data;
+        });
+
+        ipcRenderer.on('setAllocUser', (event, data) => { 
+          console.log(data.length);
+          console.log('data.length');
+          console.log(data);
+          var select = document.getElementById("alloc_users"); 
+          console.log(data.length);
+          document.getElementById("alloc_users").options.length = 0;
+
+          var el = document.createElement("option");
+          el.textContent = "Select Room";
+          el.value = "";
+          select.appendChild(el);
+          el = document.createElement("option");
+          // el.textContent = "Create New User";
+          // el.value = "new";
+          // select.appendChild(el);
+
+          if(data && data.length > 0 ){
+            for(var i = 0; i < data.length; i++) {
+              el = document.createElement("option");
+              el.textContent = data[i][1];
+              el.value = data[i][0];
+              select.appendChild(el);
+            }
+            getSystemKey();
+          }
+        });
+         
+        ipcRenderer.on('setAllocDepartment', (event, data) => { console.log(data.length);
+          console.log('data.length');
+          console.log(data);
+          var select = document.getElementById("alloc_department"); 
+          document.getElementById("alloc_department").options.length = 0;
+
+          var el = document.createElement("option");
+          el.textContent = "Select Department";
+          el.value = "";
+          select.appendChild(el);
+          el = document.createElement("option");
+          // el.textContent = "Create New User";
+          // el.value = "new";
+          // select.appendChild(el);
+
+          if(data && data.length > 0 ){
+            for(var i = 0; i < data.length; i++) {
+              el = document.createElement("option");
+              el.textContent = data[i][1];
+              el.value = data[i][0];
+              select.appendChild(el);
+            }
+            getSystemKey();
+          }
+        });
+
+         ipcRenderer.on('checked_member_email', (event, data) => { 
+          if(data.status == 'invalid'){
+            document.getElementById("err_member_email_id").innerText = 'Email Id does not exist';
+            var vali_btn_err =  document.getElementById('btn_validate');
+            vali_btn_err.setAttribute('style', 'display:block !important');
+            //document.getElementById("member_email_id").value = "";
+          }else{ 
+            document.getElementById("err_member_email_id").innerText = '';
+            document.getElementById("parent_id").value = data.user_id;
+            document.getElementById("client_no").value = data.client_no;
+            document.getElementById("token").value = data.token;
+            console.log("Member id: "+data.user_id);
+            loadAllocUser(data.user_id);
+            loadAllocDepartment(data.user_id);
+            if(data.user_type == '2' && data.member_type == '5'){
+              loadDevType('yes');
+            }else{
+              loadDevType('no');
+            }
+            document.getElementById('after_validate').style.display='block';
+            document.getElementById('allocate_user').style.display='block';
+            document.getElementById('allocate_department').style.display='block';
+          }
+        });
+  </script>
+</html>
